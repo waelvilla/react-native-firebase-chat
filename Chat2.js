@@ -17,10 +17,12 @@ const sleep = async (t) => {
 };
 export default function Chat({chatId, userId}) {
   const [messages, setMessages] = useState([]);
+  const [text, setText] = useState('');
   const [id] = useState(2);
-  const [userStatus, setUserUstatus] = useState('offline');
+  const [userStatus, setUserStatus] = useState('offline');
   const [otherUserStatus, setOtherUserStatus] = useState('offline');
   const otherUserId = 'user1';
+
   useEffect(() => {
     const messagesSubscriber = firestore()
       .collection('Chats')
@@ -35,25 +37,44 @@ export default function Chat({chatId, userId}) {
         });
         setMessages(tmpMessages);
       });
-      const statusSubscriber =  firestore()
+    const statusSubscriber = firestore()
       .collection('Chats')
       .doc(chatId)
       .collection('Status')
       .doc(otherUserId)
-      .onSnapshot((snapshot)=> {
-        const user = snapshot.data()
-        if(user?.status !== otherUserStatus) {
+      .onSnapshot((snapshot) => {
+        const user = snapshot.data();
+        if (user?.status !== otherUserStatus) {
           setOtherUserStatus(user.status);
         }
-      })
-    return () => messagesSubscriber();
-  }, [chatId]);
-
-  const onTextInput = (text) => {
-    if(text) {
-
+      });
+    return () => {
+      messagesSubscriber();
+      statusSubscriber();
     }
-  }
+  }, [chatId, otherUserStatus]);
+
+  const onTextInput = (textInput) => {
+    if (textInput && userStatus !== 'typing') {
+      setUserStatus('typing');
+      setStatus('typing');
+    } else if (!textInput && userStatus === 'typing') {
+      setUserStatus('online');
+      setStatus('online');
+    }
+    setText(textInput);
+  };
+  const setStatus = (status) => {
+    firestore()
+      .collection('Chats')
+      .doc(chatId)
+      .collection('Status')
+      .doc(userId)
+      .update({
+        status,
+      })
+      .catch((err) => console.log('Error updating status:', err));
+  };
   const onSend = (message = []) => {
     setMessages((previousMessages) =>
       GiftedChat.append(previousMessages, message),
@@ -68,7 +89,15 @@ export default function Chat({chatId, userId}) {
 
   return (
     <View style={{flex: 1}}>
-      <View style={{top: 0, width: '100%', height: 50, backgroundColor: 'white', borderBottomColor: 'black', borderBottomWidth: 1}}>
+      <View
+        style={{
+          top: 0,
+          width: '100%',
+          height: 50,
+          backgroundColor: 'white',
+          borderBottomColor: 'black',
+          borderBottomWidth: 1,
+        }}>
         <Text style={{textAlign: 'center'}}>{otherUserStatus}</Text>
       </View>
       <GiftedChat

@@ -5,7 +5,7 @@ import Chat2 from './Chat2';
 
 const App = () => {
   const chatId = '1234';
-  const userId = 'asdf1234';
+  const userId = 'user1';
   const [active, setActive] = useState(true);
   return (
     <View style={{flex:1}}>
